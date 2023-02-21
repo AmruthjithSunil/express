@@ -8,6 +8,8 @@ const sequelize = require("./util/database");
 
 const Product = require("./models/product");
 const User = require("./models/user");
+const Cart = require("./models/cart");
+const CartItem = require("./models/cart-item");
 
 const app = express();
 
@@ -37,15 +39,20 @@ app.use(errorController.get404);
 
 Product.belongsTo(User, { constraints: true, onDelete: "CASCADE" });
 User.hasMany(Product);
+User.hasOne(Cart);
+Cart.belongsTo(User);
+Cart.belongsToMany(Product, { through: CartItem });
+Product.belongsTo(Cart, { through: CartItem });
 
 async function syncDb() {
   try {
     const result = await sequelize.sync();
+    //const result = await sequelize.sync({ force: true });
     let user = await User.findByPk(1);
     if (!user) {
       user = await User.create({ name: "Amruth", email: "amruth@gmail.com" });
+      await user.createCart();
     }
-    //console.log(user);
     app.listen(3000);
   } catch (err) {
     console.log(err);
@@ -53,13 +60,3 @@ async function syncDb() {
 }
 
 syncDb();
-
-// sequelize
-//   .sync({ force: true })
-//   .then((result) => {
-//     //console.log(result);
-//     app.listen(3000);
-//   })
-//   .catch((err) => {
-//     console.log(err);
-//   });
